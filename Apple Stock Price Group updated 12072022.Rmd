@@ -1,0 +1,201 @@
+---
+title: "Apple Stock Price"
+author: "Group 1"
+date: '2022-12-03'
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# import necessary libraries
+```{r}
+library(astsa)
+library(TSA)
+library(tseries)
+library(forecast)
+```
+
+# importing the data- Apple stock price
+```{r}
+setwd("C:/Users/Alaba/Desktop/Time Series STAT 5307")
+grpdata <- read.csv('Apple stock group project monthly.csv')
+grpdata
+```
+# Note the Date is character need to be changed to date type
+#EDA - Summarization
+```{r}
+head(grpdata)
+```
+```{r}
+tail(grpdata)
+```
+```{r}
+#Delete NA
+data = na.omit(grpdata)
+data
+```
+# 
+```{r}
+str(grpdata)
+```
+
+
+```{r}
+cl = grpdata$Close
+```
+
+```{r}
+mean(cl)
+```
+
+```{r}
+median(cl)
+```
+
+```{r}
+mode = function(x){
+  ta = table(x)
+  tam = max(ta)
+  if(all(ta==tam))
+    mod =NA
+  else
+    if (is.numeric(x))
+      mod = as.numeric(names(ta)[ta==tam])
+  else
+    mod =names(ta)[ta==tam]
+  return(mod)
+}
+```
+
+```{r}
+mode(cl)
+```
+
+```{r}
+#standard deviation
+sd(cl)
+```
+```{r}
+#variance
+var(cl)
+```
+```{r}
+quantile(cl)
+```
+
+
+#EDA - data visualization
+
+```{r}
+str(grpdata)
+```
+
+```{r}
+#convert Date from character data to date type
+grpdata$Date <- as.Date(grpdata$Date,format = "%m/%d/%y")
+head(grpdata)
+```
+```{r}
+grpda <- ts(grpdata$Close, start = 1980,frequency = 12)
+plot.ts(grpda)
+```
+```{r}
+hist(cl)
+```
+```{r}
+ggseasonplot(grpda)
+```
+
+```{r}
+# check if the data is stationary using closing price
+par(mfrow= c(2,2))
+x=cl
+acf(x, 50)
+plot.ts(x)
+```
+
+
+```{r}
+par(mfrow = c(2,2))
+#log transformation data to stabilize the data
+logx = log(x)
+plot.ts(logx)
+acf(logx)
+```
+
+
+
+```{r}
+library(astsa)
+par(mfrow= c(2,2))
+# First difference
+dlogx = diff(logx)
+plot(dlogx)
+acf(dlogx)
+acf2(dlogx)
+```
+
+```{r}
+library(astsa)
+acf2(dlogx)
+```
+
+
+
+```{r}
+ddlogx = diff(dlogx,12)
+acf2(ddlogx, 100)
+```
+
+
+# Using ecaf to identify the starting order of ARMA (p,q)
+```{r}
+eacf(ddlogx)
+```
+#Orders of (p,q)= (0,0),(0,1),(1,0),(1,1)
+```{r}
+#plots
+plot.ts(cbind(x,logx,dlogx,ddlogx))
+```
+
+```{r}
+sarima(logx,0,1,0,0,1,1,12) # model1
+```
+```{r}
+sarima(logx,0,1,1,0,1,1,12) #model2
+```
+```{r}
+sarima(logx,1,1,0,0,1,1,12) #model3
+```
+```{r}
+sarima(logx,1,1,1,0,1,1,12) #model3
+```
+
+```{r}
+# note considering the pvalue of other model which significant
+Heading = c("AIC", "AICc", "BIC")
+mod1 = c(-1.115263, -1.115246, -1.097982)
+Model_comparism = data.frame(Heading,mod1)
+Model_comparism
+```
+# writeing the model
+
+```{r}
+auto.arima(logx)
+```
+# auto.arima suggested ARIMA(1,1,0)with drift
+```{r}
+sarima(logx,1,1,0,0,1,1,12)
+```
+```{r}
+#predicting the next 12 months  Using auto.arima suggested model
+sarima.for(logx,12,1,1,0)
+```
+#predicting the next 12 months  Using Ljunk box test suggested model
+```{r}
+sarima.for(logx,12,0,1,0,0,1,1,12)
+```
+
